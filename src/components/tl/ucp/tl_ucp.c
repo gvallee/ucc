@@ -241,4 +241,6 @@ __attribute__((constructor)) static void tl_ucp_iface_init(void)
         ucc_tl_ucp_allreduce_algs;
     ucc_tl_ucp.super.alg_info[ucc_ilog2(UCC_COLL_TYPE_BCAST)] =
         ucc_tl_ucp_bcast_algs;
+
+    ucc_components_load("tlcp_ucp", &ucc_tl_ucp.super.coll_plugins);
 }
