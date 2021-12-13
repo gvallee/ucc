@@ -1,0 +1,3 @@
+[submodule "src/components/tl/ucp/coll_plugins/alltoallv"]
+	path = src/components/tl/ucp/coll_plugins/alltoallv
+	url = git@github.com:gvallee/ucc_plugin_alltoallv.git

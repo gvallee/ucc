@@ -193,7 +193,7 @@ UCC_CLASS_CLEANUP_FUNC(ucc_tl_ucp_context_t)
         ucp_worker_release_address(self->ucp_worker, self->worker_address);
     }
     ucp_worker_destroy(self->ucp_worker);
-    ucc_mpool_cleanup(&self->req_mp, 1);
+    ucc_mpool_cleanup(&self->req_mp, 0);
     ucp_cleanup(self->ucp_context);
 }
 
