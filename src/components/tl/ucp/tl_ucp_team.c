@@ -11,6 +11,10 @@
 #include "utils/ucc_malloc.h"
 #include "coll_score/ucc_coll_score.h"
 
+#ifdef HAVE_DPU_OFFLOAD
+#include "dpu_offload_service_daemon.h"
+#endif
+
 UCC_CLASS_INIT_FUNC(ucc_tl_ucp_team_t, ucc_base_context_t *tl_context,
                     const ucc_base_team_params_t *params)
 {
@@ -105,6 +109,18 @@ ucc_status_t ucc_tl_ucp_team_create_test(ucc_base_team_t *tl_team)
             team->base_length[i] = ctx->remote_info[i].len;
         }
     }
+
+#if HAVE_DPU_OFFLOAD
+    // DPU offloading: during the initialization of the team, we check if we are
+    // connect to the local shadow DPU(s), if not we try to connect to it.
+    offloading_engine_t *offloading_engine = DPU_OFFLOADING_ENGINE(team);
+    if (offloading_engine->client == NULL)
+    {
+        execution_context_t *econtext = client_init(offloading_engine, NULL);
+        team->dpu_offloading_econtext = econtext;
+        offloading_engine->client = econtext->client;
+    }
+#endif // HAVE_DPU_OFFLOAD
 
     tl_info(tl_team->context->lib, "initialized tl team: %p", team);
     team->status = UCC_OK;

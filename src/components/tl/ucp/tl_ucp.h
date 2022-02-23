@@ -24,6 +24,10 @@
 #include "utils/profile/ucc_profile_off.h"
 #endif
 
+#ifdef HAVE_DPU_OFFLOAD
+#include "dpu_offload_types.h"
+#endif
+
 #define UCC_TL_UCP_PROFILE_FUNC UCC_PROFILE_FUNC
 #define UCC_TL_UCP_PROFILE_FUNC_VOID UCC_PROFILE_FUNC_VOID
 #define UCC_TL_UCP_PROFILE_REQUEST_NEW UCC_PROFILE_REQUEST_NEW
@@ -99,6 +103,11 @@ typedef struct ucc_tl_ucp_context {
     ucc_mpool_t                 req_mp;
     tl_ucp_ep_hash_t *          ep_hash;
     ucp_ep_h *                  eps;
+#ifdef HAVE_DPU_OFFLOAD
+    int32_t *                   num_shadow_eps; // Array giving how many shadow DPU each rank has
+    ucp_ep_h *                  shadow_eps[8]; // fixme: find a better solution than hardcoding a limit of 8 shadow DPUs per rank
+    offloading_engine_t *       dpu_offloading_engine;
+#endif // HAVE_DPU_OFFLOAD
     ucc_tl_ucp_remote_info_t *  remote_info;
     ucp_rkey_h *                rkeys;
     uint64_t                    n_rinfo_segs;
@@ -115,6 +124,7 @@ typedef struct ucc_tl_ucp_team {
     ucc_tl_ucp_task_t         *preconnect_task;
     void *                     va_base[MAX_NR_SEGMENTS];
     size_t                     base_length[MAX_NR_SEGMENTS];
+    execution_context_t       *dpu_offloading_econtext;
 } ucc_tl_ucp_team_t;
 UCC_CLASS_DECLARE(ucc_tl_ucp_team_t, ucc_base_context_t *,
                   const ucc_base_team_params_t *);

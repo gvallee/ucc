@@ -13,6 +13,10 @@
 #include "schedule/ucc_schedule_pipelined.h"
 #include <limits.h>
 
+#if HAVE_DPU_OFFLOAD
+#include "dpu_offload_service_daemon.h"
+#endif // HAVE_DPU_OFFLOAD
+
 UCC_CLASS_INIT_FUNC(ucc_tl_ucp_context_t,
                     const ucc_base_context_params_t *params,
                     const ucc_base_config_t *config)
@@ -160,6 +164,15 @@ UCC_CLASS_INIT_FUNC(ucc_tl_ucp_context_t,
         self->eps     = NULL;
         self->ep_hash = kh_init(tl_ucp_ep_hash);
     }
+
+#ifdef HAVE_DPU_OFFLOAD
+    offloading_engine_t *offload_engine;
+    dpu_offload_status_t rc = offload_engine_init(&offload_engine);
+    assert(rc == DO_SUCCESS);
+    assert(offload_engine != NULL);
+    self->dpu_offloading_engine = offload_engine;
+#endif // HAVE_DPU_OFFLOAD
+
     tl_info(self->super.super.lib, "initialized tl context: %p", self);
     return UCC_OK;
 
