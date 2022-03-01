@@ -169,7 +169,12 @@ UCC_CLASS_INIT_FUNC(ucc_tl_ucp_context_t,
     offloading_engine_t *offload_engine;
     fprintf(stderr, "DBG: initializing offloading engine...\n");
     dpu_offload_status_t rc = offload_engine_init(&offload_engine);
-    assert(rc == DO_SUCCESS);
+    if (rc)
+    {
+        fprintf(stderr, "offload_engine_init() failed\n");
+        ucc_status = UCC_ERR_NO_MESSAGE;
+        goto err_thread_mode;
+    }
     assert(offload_engine != NULL);
     self->dpu_offloading_engine = offload_engine;
     fprintf(stderr, "DBG: offloading engine = %p\n", offload_engine);

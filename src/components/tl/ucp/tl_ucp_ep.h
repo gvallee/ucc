@@ -91,13 +91,22 @@ ucc_tl_ucp_request_shadow_dpu_data(ucc_tl_ucp_team_t *team, ucc_rank_t rank,
     shadow_ep_req_data.group_rank = rank;
 
     rc = event_get(DPU_OFFLOADING_EXECUTION_CONTEXT(team)->event_channels, &ev);
-    assert(rc == DO_SUCCESS);
+    if (rc)
+    {
+        fprintf(stderr, "event_get() failed\n");
+        return UCC_ERR_NO_MESSAGE;
+    }
     assert(ev != NULL);
 
     rc = event_channel_emit(
         ev, DPU_OFFLOADING_EXECUTION_CONTEXT_ID(team), AM_PEER_CACHE_REQ_MSG_ID,
         RANK_SHADOW_DPU_EP(ctx, UCC_TL_TEAM_RANK(team), 0), NULL,
         &shadow_ep_req_data, sizeof(shadow_ep_req_data));
+    if (rc)
+    {
+        fprintf(stderr, "event_channel_emit() failed\n");
+        return UCC_ERR_NO_MESSAGE;
+    }
     *req = ev->req;
     return UCC_OK;
 }
