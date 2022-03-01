@@ -11,6 +11,10 @@
 #include "components/cl/ucc_cl_type.h"
 #include "utils/ucc_parser.h"
 
+#ifdef HAVE_DPU_OFFLOAD
+#include "dpu_offload_types.h"
+#endif // HAVE_DPU_OFFLOAD
+
 typedef struct ucc_cl_lib      ucc_cl_lib_t;
 typedef struct ucc_tl_lib      ucc_tl_lib_t;
 typedef struct ucc_cl_lib_attr ucc_cl_lib_attr_t;
@@ -32,6 +36,12 @@ typedef struct ucc_lib_info {
     ucc_lib_attr_t    attr;
     int               specific_cls_requested;
     ucc_cl_lib_attr_t *cl_attrs;
+#ifdef HAVE_DPU_OFFLOAD
+    struct  {
+        char *cfg_file;
+        dpu_config_t *dpus_config;
+    } dpu_offloading;
+#endif // HAVE_DPU_OFFLOAD
 } ucc_lib_info_t;
 
 void ucc_get_version(unsigned *major_version, unsigned *minor_version,

@@ -15,6 +15,10 @@
 #include "components/mc/ucc_mc.h"
 #include "components/ec/ucc_ec.h"
 
+#ifdef HAVE_DPU_OFFLOAD
+#include "dpu_offload_envvars.h"
+#endif // HAVE_DPU_OFFLOAD
+
 UCS_CONFIG_DEFINE_ARRAY(cl_types, sizeof(ucc_cl_type_t),
                         UCS_CONFIG_TYPE_ENUM(ucc_cl_names));
 
@@ -344,6 +348,33 @@ ucc_status_t ucc_init_version(unsigned api_major_version,
     if (UCC_OK != status) {
         goto error;
     }
+
+#ifdef HAVE_DPU_OFFLOAD
+    char *offloading_config_file = getenv(OFFLOAD_CONFIG_FILE_PATH_ENVVAR);
+    if (offloading_config_file)
+    {
+        fprintf(stderr, "DBG: offloading configuration file defined...\n");
+        char my_hostname[1024];
+        my_hostname[1023] = '\0';
+        gethostname(my_hostname, 1023);
+        lib->dpu_offloading.cfg_file = offloading_config_file;
+        dpu_offload_status_t rc = find_config_from_platform_configfile(lib->dpu_offloading.cfg_file,
+            my_hostname,
+            &lib->dpu_offloading.dpus_config);
+        if (rc)
+        {
+            fprintf(stderr, "find_config_from_platform_configfile() failed");
+            goto error;
+        }
+        assert(lib->dpu_offloading.dpus_config);
+    }
+    else
+    {
+        fprintf(stderr, "DBG: offloading configuration file undefined\n");
+        lib->dpu_offloading.cfg_file = NULL;
+        lib->dpu_offloading.dpus_config = NULL;
+    }
+#endif // HAVE_DPU_OFFLOAD
 
     *lib_p = lib;
     return UCC_OK;

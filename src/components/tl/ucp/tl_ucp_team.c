@@ -27,6 +27,10 @@ UCC_CLASS_INIT_FUNC(ucc_tl_ucp_team_t, ucc_base_context_t *tl_context,
     self->preconnect_task    = NULL;
     self->seq_num            = 0;
     self->status             = UCC_INPROGRESS;
+#ifdef HAVE_DPU_OFFLOAD
+    fprintf(stderr, "DBG: Initializing team's offloading data...\n");
+    self->dpu_offloading_econtext = NULL;
+#endif // HAVE_DPU_OFFLOAD
 
     tl_info(tl_context->lib, "posted tl team: %p", self);
     return UCC_OK;
@@ -35,6 +39,11 @@ UCC_CLASS_INIT_FUNC(ucc_tl_ucp_team_t, ucc_base_context_t *tl_context,
 UCC_CLASS_CLEANUP_FUNC(ucc_tl_ucp_team_t)
 {
     tl_info(self->super.super.context->lib, "finalizing tl team: %p", self);
+#ifdef HAVE_DPU_OFFLOAD
+    // Terminate the execution context
+    // todo
+    self->dpu_offloading_econtext = NULL;
+#endif // HAVE_DPU_OFFLOAD
 }
 
 UCC_CLASS_DEFINE_DELETE_FUNC(ucc_tl_ucp_team_t, ucc_base_team_t);
@@ -110,15 +119,45 @@ ucc_status_t ucc_tl_ucp_team_create_test(ucc_base_team_t *tl_team)
         }
     }
 
-#if HAVE_DPU_OFFLOAD
+#ifdef HAVE_DPU_OFFLOAD
     // DPU offloading: during the initialization of the team, we check if we are
     // connect to the local shadow DPU(s), if not we try to connect to it.
-    offloading_engine_t *offloading_engine = DPU_OFFLOADING_ENGINE(team);
+    fprintf(stderr, "DBG: looking up offloading engine...\n");
+    offloading_engine_t *offloading_engine = ctx->dpu_offloading_engine;
+    fprintf(stderr, "DBG: offloading engine found (%p)...\n", offloading_engine);
+    assert(offloading_engine);
     if (offloading_engine->client == NULL)
     {
-        execution_context_t *econtext = client_init(offloading_engine, NULL);
+        fprintf(stderr, "DBG: -> getting library...\n");
+        ucc_lib_info_t   *_lib = team->super.super.context->ucc_context->lib;
+        execution_context_t *econtext;
+        init_params_t offloading_init_params;
+        conn_params_t client_conn_params;
+        rank_info_t rank_info;
+        if (_lib->dpu_offloading.cfg_file != NULL)
+        {
+            fprintf(stderr, "DBG: -> Platform configuration file exists, loading...\n");
+            uint16_t team_id = team->super.super.params.id;
+            rank_info.group_id = team_id;
+            rank_info.group_rank = UCC_TL_TEAM_RANK(team);
+
+            client_conn_params.addr_str = _lib->dpu_offloading.dpus_config[0].version_1.addr; // fixme: support for more than one DPU
+            client_conn_params.port = _lib->dpu_offloading.dpus_config[0].version_1.rank_port;
+
+            offloading_init_params.worker = ctx->ucp_worker;
+            offloading_init_params.proc_info = &rank_info;
+            offloading_init_params.conn_params = &client_conn_params;
+            fprintf(stderr, "DBG: -> DPU offloading: client initialization based on configuration file...\n");
+            econtext = client_init(offloading_engine, &offloading_init_params);
+        }
+        else 
+        {
+            fprintf(stderr, "DBG: -> DPU offloading: client initialization without initialization parameters...\n");
+            econtext = client_init(offloading_engine, NULL);
+        }
         team->dpu_offloading_econtext = econtext;
         offloading_engine->client = econtext->client;
+        fprintf(stderr, "DBG: -> DPU offloading: client successfully initialized...\n");
     }
 #endif // HAVE_DPU_OFFLOAD
 
