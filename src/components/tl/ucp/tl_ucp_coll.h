@@ -180,6 +180,7 @@ typedef struct ucc_tl_ucp_schedule {
 #define TASK_LIB(_task)                                                        \
     (ucc_derived_of((_task)->super.team->context->lib, ucc_tl_ucp_lib_t))
 #define TASK_ARGS(_task) (_task)->super.bargs.args
+#define TASK_FLAGS(_task) (_task)->super.bargs.args.flags
 
 #define AVG_ALPHA(_task) (1.0 / (double)UCC_TL_TEAM_SIZE(TASK_TEAM(_task)))
 
